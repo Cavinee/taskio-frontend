@@ -37,7 +37,6 @@ export async function POST(request: Request) {
 
     await client.close()
 
-    // Generate JWT token
     const token = jwt.sign(
       { 
         userId: user._id.toString(),
