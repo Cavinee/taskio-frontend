@@ -1,37 +1,136 @@
 'use client'
 
-import React, { useState } from 'react'
-import { Bell, Calendar as CalendarIcon, CheckCircle, Grid, Minus, Plus, User } from 'lucide-react'
+import React, { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
+import Link from 'next/link'
+import { Bell, CalendarIcon, CheckCircle, Grid, Minus, Plus, User, Loader2 } from 'lucide-react'
 import { Calendar } from "@/components/ui/calendar"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Checkbox } from "@/components/ui/checkbox"
-import { Task } from "../models/task"
+import { Button } from "@/components/ui/button"
+
+interface Task {
+  _id: string
+  title: string
+  description?: string
+  dueDate: string
+  priority: string
+  status: string
+  tags?: string[]
+}
+
+interface UserData {
+  _id: string
+  username: string
+  email: string
+}
 
 export default function Dashboard() {
-  const [focusTime, setFocusTime] = useState(25 * 60)
+  const [userData, setUserData] = useState<UserData | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date())
-  const [tasks, setTasks] = useState<Task[]>([
-    { id: 1, title: "Breakfast", date: new Date(), completed: false },
-    { id: 2, title: "Buy groceries", date: new Date(), completed: false },
-    { id: 3, title: "Meeting with client", date: new Date(new Date().setDate(new Date().getDate() + 1)), completed: false },
-    { id: 4, title: "Chest day and Cardio", date: new Date(new Date().setDate(new Date().getDate() + 1)), completed: false },
-  ])
+  const [tasks, setTasks] = useState<Task[]>([])
+  const router = useRouter()
 
-  const handleTask = (id: number) => {
-    setTasks(prevTasks => prevTasks.map(task => task.id === id ? {...task, completed: !task.completed} : task))
+  useEffect(() => {
+    const fetchUserData = async () => {
+      const token = localStorage.getItem('token')
+      if (!token) {
+        router.push('/login')
+        return
+      }
+
+      try {
+        const response = await fetch('/api/user', {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        })
+
+        if (response.ok) {
+          const data = await response.json()
+          setUserData(data)
+          fetchTasks()
+        } else {
+          throw new Error('Failed to fetch user data')
+        }
+      } catch (error) {
+        console.error('Error fetching user data:', error)
+        router.push('/login')
+      }
+    }
+
+    fetchUserData()
+  }, [router])
+
+  const fetchTasks = async () => {
+    try {
+      const token = localStorage.getItem('token')
+      const response = await fetch('/api/tasks', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
+      if (response.ok) {
+        const data = await response.json()
+        setTasks(data.tasks)
+      } else {
+        console.error("Failed to fetch tasks")
+      }
+    } catch (error) {
+      console.error("Error fetching tasks:", error)
+    } finally {
+      setIsLoading(false)
+    }
   }
 
-  const formatTime = (seconds: number) => {
-    const minutes = Math.floor(seconds / 60)
-    const remainingSeconds = seconds % 60
-    return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`
+  const handleTask = async (id: string) => {
+    const taskToUpdate = tasks.find(task => task._id === id)
+    if (!taskToUpdate) return
+
+    const newStatus = taskToUpdate.status == 'Completed' ? 'To Do' : 'Completed'
+
+    try {
+      const token = localStorage.getItem('token')
+      const response = await fetch('/api/tasks', {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ id, status: newStatus })
+      })
+
+      if (response.ok) {
+        setTasks(prevTasks => prevTasks.map(task => 
+          task._id === id ? { ...task, status: newStatus } : task
+        ))
+      } else {
+        console.error("Failed to update task")
+      }
+    } catch (error) {
+      console.error("Error updating task:", error)
+    }
   }
 
-  const todayTasks = tasks.filter(task => task.date.toDateString() === new Date().toDateString())
-  const upcomingTasks = tasks.filter(task => task.date > new Date())
+  const todayTasks = tasks.filter(task => new Date(task.dueDate).toDateString() === new Date().toDateString())
+  const upcomingTasks = tasks.filter(task => new Date(task.dueDate) > new Date())
   const selectedDateTasks = selectedDate
-    ? tasks.filter(task => task.date.toDateString() === selectedDate.toDateString())
+    ? tasks.filter(task => new Date(task.dueDate).toDateString() === selectedDate.toDateString())
     : []
+
+  const handleSignOut = () => {
+    localStorage.removeItem('token')
+    router.push('/login')
+  }
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-900 text-white flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen bg-gray-900 text-white p-6">
@@ -41,14 +140,14 @@ export default function Dashboard() {
           <span className="text-xl font-semibold">Task.io</span>
         </div>
         <nav className="flex space-x-6">
-          <button className="flex flex-col items-center text-gray-400 hover:text-white">
+          <button className="flex flex-col items-center text-white">
             <Grid className="w-6 h-6" />
             <span className="text-xs">Dashboard</span>
           </button>
-          <button className="flex flex-col items-center text-gray-400 hover:text-white">
+          <Link href="/tasks" className="flex flex-col items-center text-gray-400 hover:text-white">
             <CheckCircle className="w-6 h-6" />
             <span className="text-xs">Tasks</span>
-          </button>
+          </Link>
           <button className="flex flex-col items-center text-gray-400 hover:text-white">
             <CalendarIcon className="w-6 h-6" />
             <span className="text-xs">Calendar</span>
@@ -58,23 +157,25 @@ export default function Dashboard() {
             <span className="text-xs">Reminder</span>
           </button>
         </nav>
-        <button className="bg-gray-800 p-2 rounded-full">
+        <Button variant="ghost" className="bg-gray-800 p-2 rounded-full" onClick={handleSignOut}>
           <User className="w-6 h-6" />
-        </button>
+        </Button>
       </header>
 
-      <h1 className="text-3xl font-bold mb-6">Good Afternoon, Bob!</h1>
+      <h1 className="text-3xl font-bold mb-6">Good Afternoon, {userData?.username}!</h1>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="space-y-6">
           <div className="bg-gray-800 rounded-lg p-6">
             <h2 className="text-xl font-semibold mb-4">Today</h2>
             <ul className="space-y-4">
-              {todayTasks.map(task => (
-                <li key={task.id} className="flex justify-between items-center">
-                  <div className="flex items-center">
-                    <Checkbox className="mr-3 form-checkbox h-5 w-5 text-blue-600" checked={task.completed} onCheckedChange={() => handleTask(task.id)} />
-                      {task.completed ? <span className="text-gray-400 line-through">{task.title}</span> : <span>{task.title}</span>}
+              {todayTasks.length == 0 ? <p className="text-gray-400">No tasks for today.</p> : 
+              todayTasks.map((task, index)=> (
+                <li key={task._id} className="flex items-center">
+                  <div className={`w-1 h-12 ${index % 2 === 0 ? 'bg-yellow-400' : 'bg-green-400'} mr-3`}></div>
+                  <div>
+                    <div className="font-semibold">{task.title}</div>
+                    <div className="text-sm text-gray-400">Due: {new Date(task.dueDate).toLocaleDateString()}</div>
                   </div>
                 </li>
               ))}
@@ -82,35 +183,19 @@ export default function Dashboard() {
 
             <h2 className="text-xl font-semibold mt-6 mb-4">Upcoming Task</h2>
             <ul className="space-y-4">
-              {upcomingTasks.map((task, index) => (
-                <li key={task.id} className="flex items-center">
+              {upcomingTasks.length == 0 ? <p className="text-gray-400">There are no upcoming tasks.</p> : upcomingTasks.map((task, index) => (
+                <li key={task._id} className="flex items-center">
                   <div className={`w-1 h-12 ${index % 2 === 0 ? 'bg-yellow-400' : 'bg-green-400'} mr-3`}></div>
                   <div>
                     <div className="font-semibold">{task.title}</div>
+                    <div className="text-sm text-gray-400">Due: {new Date(task.dueDate).toLocaleDateString()}</div>
                   </div>
                 </li>
               ))}
             </ul>
           </div>
 
-          <div className="bg-gray-800 rounded-lg p-6">
-            <h2 className="text-xl font-semibold mb-4">Focus Timer</h2>
-            <div className="flex justify-center items-center space-x-4">
-              <button 
-                className="bg-gray-700 rounded-full p-2"
-                onClick={() => setFocusTime(prev => Math.max(0, prev - 60))}
-              >
-                <Minus className="w-6 h-6" />
-              </button>
-              <div className="text-6xl font-bold">{formatTime(focusTime)}</div>
-              <button 
-                className="bg-gray-700 rounded-full p-2"
-                onClick={() => setFocusTime(prev => prev + 60)}
-              >
-                <Plus className="w-6 h-6" />
-              </button>
-            </div>
-          </div>
+          
         </div>
 
         <div className="bg-gray-800 rounded-lg p-6">
@@ -122,7 +207,7 @@ export default function Dashboard() {
               onSelect={setSelectedDate}
               className="rounded-md border h-[285px] w-[250px] mb-5"
               modifiers={{
-                hasTasks: (date) => tasks.some(task => task.date.toDateString() === date.toDateString())
+                hasTasks: (date) => tasks.some(task => new Date(task.dueDate).toDateString() === date.toDateString())
               }}
               modifiersStyles={{
                 hasTasks: { position: 'relative' }
@@ -131,7 +216,7 @@ export default function Dashboard() {
                 DayContent: ({ date }) => (
                   <div className="relative w-full h-full flex items-center justify-center">
                     {date.getDate()}
-                    {tasks.some(task => task.date.toDateString() === date.toDateString()) && (
+                    {tasks.some(task => new Date(task.dueDate).toDateString() === date.toDateString()) && (
                       <div className="absolute bottom-1 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-blue-500 rounded-full"></div>
                     )}
                   </div>
@@ -148,10 +233,17 @@ export default function Dashboard() {
                 {selectedDateTasks.length > 0 ? (
                   <ul className="space-y-2">
                     {selectedDateTasks.map(task => (
-                      <li key={task.id} className="flex justify-between items-center">
+                      <li key={task._id} className="flex justify-between items-center">
                         <div className="flex items-center">
-                          <Checkbox className="mr-3 form-checkbox h-5 w-5 text-blue-600" checked={task.completed} onCheckedChange={() => handleTask(task.id)} />
-                          {task.completed ? <span className="text-gray-400 line-through">{task.title}</span> : <span className="text-white">{task.title}</span>}
+                          <Checkbox 
+                            className="mr-3 form-checkbox h-5 w-5 text-blue-600" 
+                            checked={task.status == 'Completed'} 
+                            onCheckedChange={() => handleTask(task._id)} 
+                          />
+                          {task.status === 'Completed' ? 
+                            <span className="text-gray-400 line-through">{task.title}</span> : 
+                            <span className="text-white">{task.title}</span>
+                          }
                         </div>
                       </li>
                     ))}

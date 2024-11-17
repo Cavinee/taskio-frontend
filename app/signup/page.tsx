@@ -18,11 +18,12 @@ import {
 } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Bell, Calendar as CalendarIcon, CheckCircle, Grid, Minus, Plus, User } from 'lucide-react'
+import { Calendar as CheckCircle, User } from 'lucide-react'
+import Link from "next/link"
 
 const formSchema = z.object({
-  username: z.string().min(2, {
-    message: "Username must be at least 2 characters.",
+  username: z.string().min(5, {
+    message: "Username must be at least 5 characters.",
   }),
 
   email: z.string()
@@ -83,68 +84,56 @@ const [error, setError] = useState<string | null>(null)
           <CheckCircle className="w-6 h-6" />
           <span className="text-xl font-semibold">Task.io</span>
         </div>
-        <button className="bg-gray-800 p-2 rounded-full">
-          <User className="w-6 h-6" />
-        </button>
       </header>
-      <div className="bg-gray-900 text-white flex items-center justify-center flex-grow mx-80">
-        <Card className="bg-gray-800 w-full">
-          <CardHeader>
-            <CardTitle className="text-white text-xl">
-              <h2>Sign Up</h2>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-white text-lg flex items-center justify-center min-w-max">
-              <div className="flex-1 max-w-md">
-                <Form {...form}>
-                  <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-                    <FormField
-                      control={form.control}
-                      name="username"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className="font-bold text-lg">Username</FormLabel>
-                          <FormControl className="h-[45px]">
-                            <Input placeholder="Enter your username" {...field} />
-                          </FormControl>
-                          <FormMessage className=""/>
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="email"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className="font-bold text-lg">Email</FormLabel>
-                          <FormControl className="h-[45px]">
-                            <Input placeholder="Enter your email" {...field} />
-                          </FormControl>
-                          <FormMessage className=""/>
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="password"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className="font-bold text-lg">Password</FormLabel>
-                          <FormControl className="h-[45px]">
-                            <Input placeholder="Enter your password" {...field} />
-                          </FormControl>
-                          <FormMessage className=""/>
-                        </FormItem>
-                      )}
-                    />
-                    <Button variant={"secondary"} type="submit">Sign Up</Button>
-                  </form>
-                </Form>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="w-full max-w-md">
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+              <FormField
+                control={form.control}
+                name="username"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Username</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Enter your username" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Email</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Enter your email" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="password"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Password</FormLabel>
+                    <FormControl>
+                      <Input type="password" placeholder="Enter your password" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              {error && <p className="text-red-500">{error}</p>}
+              <p className="text-xs"><Link className="text-gray-100" href="/login">Already have an account?</Link></p>
+              <Button variant="secondary" type="submit">Sign Up</Button>
+            </form>
+          </Form>
+        </div>
       </div>
     </div>
   )

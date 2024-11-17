@@ -1,77 +1,66 @@
 "use client"
 
-import { zodResolver } from "@hookform/resolvers/zod"
-import { useForm } from "react-hook-form"
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { z } from "zod"
-
+import { useForm } from "react-hook-form"
+import { zodResolver } from "@hookform/resolvers/zod"
+import * as z from "zod"
 import { Button } from "@/components/ui/button"
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
   FormMessage,
 } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Bell, Calendar as CalendarIcon, CheckCircle, Grid, Minus, Plus, User } from 'lucide-react'
+import { Calendar as CheckCircle} from 'lucide-react'
+import Link from "next/link"
 
 const formSchema = z.object({
-  email: z.string()
-  .min(2, {
-    message: "Email must be at least 2 characters.",
-  })
-  .email({
-    message : "Invalid email address"
-  }),
-
-  password: z.string()
+  email: z.string().email("Invalid email address"),
+  password: z.string().min(6, "Password must be at least 6 characters"),
 })
 
-export default function ProfileForm() {
-  const [error, setError] = useState<string | null>(null)
-  const [isLoading, setIsLoading] = useState(false)
+export default function LoginPage() {
+  const [error, setError] = useState("")
   const router = useRouter()
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       email: "",
-      password: ""
+      password: "",
     },
   })
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    setIsLoading(true)
-
     try {
-      const response = await fetch('/api/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+      const response = await fetch("/api/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(values),
       })
 
+      const data = await response.json()
+
       if (response.ok) {
-        router.push('/dashboard') // Redirect to dashboard or home page
+        localStorage.setItem("token", data.token)
+        console.log("Token set in localStorage:", data.token)
+        
+        router.push("/dashboard")
       } else {
         const data = await response.json()
         throw new Error(data.error || 'An error occurred during login')
       }
     } catch (error) {
       if (error instanceof Error) {
-        // Use setError to set form-level error
         form.setError("root", { 
           type: "manual",
           message: error.message
         })
         
-        // Also set field-level errors
         form.setError("email", {
           type: "manual",
           message: "Email or password is incorrect"
@@ -81,8 +70,6 @@ export default function ProfileForm() {
           message: "Email or password is incorrect"
         })
       }
-    } finally {
-      setIsLoading(false)
     }
   }
 
@@ -93,55 +80,43 @@ export default function ProfileForm() {
           <CheckCircle className="w-6 h-6" />
           <span className="text-xl font-semibold">Task.io</span>
         </div>
-        <button className="bg-gray-800 p-2 rounded-full">
-          <User className="w-6 h-6" />
-        </button>
       </header>
-      <div className="bg-gray-900 text-white flex items-center justify-center flex-grow mx-80">
-        <Card className="bg-gray-800 w-full">
-          <CardHeader>
-            <CardTitle className="text-white text-xl">
-              <h2>Login</h2>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-white text-lg flex items-center justify-center min-w-max">
-              <div className="flex-1 max-w-md">
-                <Form {...form}>
-                  <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-                    <FormField
-                      control={form.control}
-                      name="email"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className="font-bold text-lg">Email</FormLabel>
-                          <FormControl className="h-[45px]">
-                            <Input placeholder="Enter your email" {...field} />
-                          </FormControl>
-                          <FormMessage className=""/>
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="password"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className="font-bold text-lg">Password</FormLabel>
-                          <FormControl className="h-[45px]">
-                            <Input placeholder="Enter your password" {...field} />
-                          </FormControl>
-                          <FormMessage className=""/>
-                        </FormItem>
-                      )}
-                    />
-                    <Button variant={"secondary"} type="submit">Log In</Button>
-                  </form>
-                </Form>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="w-full max-w-md">
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+              <FormField
+                control={form.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Email</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Enter your email" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="password"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Password</FormLabel>
+                    <FormControl>
+                      <Input type="password" placeholder="Enter your password" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              {error && <p className="text-red-500">{error}</p>}
+              <p className="text-xs"><Link className="text-gray-100" href="/signup">Haven't created an account?</Link></p>
+              <Button variant="secondary" type="submit">Login</Button>
+            </form>
+          </Form>
+        </div>
       </div>
     </div>
   )
