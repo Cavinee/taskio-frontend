@@ -15,7 +15,7 @@ import {
   FormMessage,
 } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
-import { Calendar as CheckCircle} from 'lucide-react'
+import { CheckCircle } from 'lucide-react'
 import Link from "next/link"
 
 const formSchema = z.object({

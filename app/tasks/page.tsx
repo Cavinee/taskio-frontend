@@ -12,7 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
 import { Checkbox } from "@/components/ui/checkbox"
-import { Bell, CalendarIcon, CheckCircle, Grid, User, Loader2, Tag, X, AlertTriangle } from 'lucide-react'
+import { CheckCircle, Grid, User, Loader2, X, AlertTriangle } from 'lucide-react'
 
 interface Task {
   _id: string
@@ -31,9 +31,9 @@ export default function TaskManagerPage() {
   const [error, setError] = useState<string | null>(null)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [allTags, setAllTags] = useState<string[]>([])
-  const [isTagsDialogOpen, setIsTagsDialogOpen] = useState(false)
   const [selectedStatus, setSelectedStatus] = useState('all')
   const [selectedTags, setSelectedTags] = useState<string[]>([])
+  const [selectedPriority, setSelectedPriority] = useState('all')
   const router = useRouter()
 
   const fetchTasks = useCallback(async () => {
@@ -107,17 +107,14 @@ export default function TaskManagerPage() {
     return tasks.filter(task => {
       const statusMatch = selectedStatus === 'all' || task.status === selectedStatus
       const tagsMatch = selectedTags.length === 0 || (task.tags && selectedTags.every(tag => task.tags?.includes(tag)))
-      return statusMatch && tagsMatch
+      const priorityMatch = selectedPriority === 'all' || task.priority === selectedPriority // Added priority filtering
+      return statusMatch && tagsMatch && priorityMatch
     })
-  }, [tasks, selectedStatus, selectedTags])
+  }, [tasks, selectedStatus, selectedTags, selectedPriority])
 
   const handleSignOut = () => {
     localStorage.removeItem('token')
     router.push('/login')
-  }
-
-  const handleShowAllTags = () => {
-    setIsTagsDialogOpen(true)
   }
 
   const handleStatusChange = (value: string) => {
@@ -211,6 +208,10 @@ export default function TaskManagerPage() {
     }
   }
 
+  const handlePriorityChange = (value: string) => {
+    setSelectedPriority(value)
+  }
+
   async function handleDeleteTask(id: string) {
     setError(null)
     try {
@@ -271,7 +272,7 @@ export default function TaskManagerPage() {
         router.push('/login')
         return
       }
-      const newStatus = currentStatus === 'Completed' ? 'To Do' : 'Completed'
+      const newStatus = currentStatus === 'Completed' ? 'In Progress' : 'Completed'
       const response = await fetch('/api/tasks', {
         method: 'PUT',
         headers: {
@@ -318,18 +319,6 @@ export default function TaskManagerPage() {
             <CheckCircle className="w-6 h-6" />
             <span className="text-xs">Tasks</span>
           </button>
-          <button className="flex flex-col items-center text-gray-400 hover:text-white">
-            <CalendarIcon className="w-6 h-6" />
-            <span className="text-xs">Calendar</span>
-          </button>
-          <button className="flex flex-col items-center text-gray-400 hover:text-white">
-            <Bell className="w-6 h-6" />
-            <span className="text-xs">Reminder</span>
-          </button>
-          <button className="flex flex-col items-center text-gray-400 hover:text-white" onClick={handleShowAllTags}>
-            <Tag className="w-6 h-6" />
-            <span className="text-xs">All Tags</span>
-          </button>
         </nav>
         <Button variant="ghost" className="bg-gray-800 p-2 rounded-full" onClick={handleSignOut}>
           <User className="w-6 h-6" />
@@ -374,7 +363,6 @@ export default function TaskManagerPage() {
                   <SelectValue placeholder="Select status" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="To Do">To Do</SelectItem>
                   <SelectItem value="In Progress">In Progress</SelectItem>
                   <SelectItem value="Completed">Completed</SelectItem>
                 </SelectContent>
@@ -396,9 +384,24 @@ export default function TaskManagerPage() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All</SelectItem>
-                <SelectItem value="To Do">To Do</SelectItem>
                 <SelectItem value="In Progress">In Progress</SelectItem>
                 <SelectItem value="Completed">Completed</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <label htmlFor="priority-select" className="block text-sm font-medium text-gray-300 mb-1"> {/* Added label for priority select */}
+              Filter by Priority
+            </label>
+            <Select onValueChange={handlePriorityChange} value={selectedPriority}> {/* Added Select for priority filtering */}
+              <SelectTrigger id="priority-select">
+                <SelectValue placeholder="Select priority" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All</SelectItem>
+                <SelectItem value="Low">Low</SelectItem>
+                <SelectItem value="Medium">Medium</SelectItem>
+                <SelectItem value="High">High</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -509,7 +512,6 @@ export default function TaskManagerPage() {
                     <SelectValue placeholder="Select status" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="To Do">To Do</SelectItem>
                     <SelectItem value="In Progress">In Progress</SelectItem>
                     <SelectItem value="Completed">Completed</SelectItem>
                   </SelectContent>
@@ -517,27 +519,6 @@ export default function TaskManagerPage() {
                 <Input name="tags" placeholder="Tags (comma-separated)" defaultValue={editingTask.tags?.join(', ')} />
                 <Button variant="secondary" type="submit">Update Task</Button>
               </form>
-            )}
-          </DialogContent>
-        </Dialog>
-
-        <Dialog open={isTagsDialogOpen} onOpenChange={setIsTagsDialogOpen}>
-          <DialogContent className="bg-gray-800 text-white">
-            <DialogHeader>
-              <DialogTitle>All Tags</DialogTitle>
-            </DialogHeader>
-            <div className="flex flex-wrap gap-2">
-              {allTags.map((tag) => (
-                <span
-                  key={tag}
-                  className="px-2 py-1 text-sm rounded-full bg-zinc-700 text-zinc-200"
-                >
-                  {tag}
-                </span>
-              ))}
-            </div>
-            {allTags.length === 0 && (
-              <p className="text-center text-gray-500 mt-4">No tags found.</p>
             )}
           </DialogContent>
         </Dialog>

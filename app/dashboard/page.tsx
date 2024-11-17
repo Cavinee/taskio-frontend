@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { Bell, CalendarIcon, CheckCircle, Grid, Minus, Plus, User, Loader2 } from 'lucide-react'
+import { CheckCircle, Grid, User, Loader2 } from 'lucide-react'
 import { Calendar } from "@/components/ui/calendar"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -148,14 +148,6 @@ export default function Dashboard() {
             <CheckCircle className="w-6 h-6" />
             <span className="text-xs">Tasks</span>
           </Link>
-          <button className="flex flex-col items-center text-gray-400 hover:text-white">
-            <CalendarIcon className="w-6 h-6" />
-            <span className="text-xs">Calendar</span>
-          </button>
-          <button className="flex flex-col items-center text-gray-400 hover:text-white">
-            <Bell className="w-6 h-6" />
-            <span className="text-xs">Reminder</span>
-          </button>
         </nav>
         <Button variant="ghost" className="bg-gray-800 p-2 rounded-full" onClick={handleSignOut}>
           <User className="w-6 h-6" />

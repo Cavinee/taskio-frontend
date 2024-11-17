@@ -5,20 +5,17 @@ import { useForm } from "react-hook-form"
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { z } from "zod"
-
 import { Button } from "@/components/ui/button"
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
   FormMessage,
 } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Calendar as CheckCircle, User } from 'lucide-react'
+import { CheckCircle } from 'lucide-react'
 import Link from "next/link"
 
 const formSchema = z.object({
@@ -38,7 +35,7 @@ const formSchema = z.object({
 })
 
 export default function ProfileForm() {
-const [error, setError] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const router = useRouter()
 
